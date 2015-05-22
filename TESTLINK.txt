@@ -1,0 +1,42 @@
+// Deze code test de veribinding tussen de arduino en de MD03
+
+#include <Wire.h>
+ 
+/**
+ * Hier worden bruikbare constanten gedefinieerd
+ */
+#define MD03_ADDRESS 0x58 // Hier staat het motor adres zie schakelaars
+#define MD03_COMMAND_REG 0x00
+#define MD03_STATUS_REG 0x01
+#define MD03_SPEED_REG 0x02
+#define MD03_ACCELERATION_REG 0x03
+#define MD03_TEMPERATURE_REG 0x04
+#define MD03_MOTOR_CURRENT_REG 0x05
+#define MD03_SOFTWARE_REV_REG 0x07
+ 
+byte counter;
+ 
+void setup() {
+  Wire.begin(); // initialiseer de I2C bus
+  Serial.begin(115200); //initialiseer de serial bus
+  counter = 0;
+}
+ 
+void loop() {
+  byte revision;
+ 
+  /*
+   * Hier wordt gezegd tegen de MD03 in welk register we willen lezen
+   */
+  Wire.beginTransmission(MD03_ADDRESS); // Starten met communicieren MD03
+  Wire.write(MD03_SOFTWARE_REV_REG);     // Verzend het adres van het regsiter dat we willen lezen
+  Wire.endTransmission();
+ 
+  Wire.requestFrom(MD03_ADDRESS, 1);   // Verzoek één byte data van de MD03
+  while(Wire.available() < 1);         // wachten tot er geen data meer wordt doorgestuurd
+  revision = Wire.read();           // Het byte wordt gelezen als een intiger
+ 
+  Serial.println(revision, DEC);
+ 
+  delay(1000);
+}
