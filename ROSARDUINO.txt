@@ -1,0 +1,73 @@
+//Deze code stuurt die MD03 aan via de arduino die zijn info verkrijgt vanuit ROS.
+
+#include <Wire.h>
+#include <ros.h>
+#include <std_msgs/UInt16.h>
+ 
+/**
+ * Define some useful constants.
+ */
+#define MD03_ADDRESS 0x58 // Het adress MD03 motor controller zie schakelaars
+#define MD03_COMMAND_REG 0x00
+#define MD03_STATUS_REG 0x01
+#define MD03_SPEED_REG 0x02
+#define MD03_ACCELERATION_REG 0x03
+#define MD03_TEMPERATURE_REG 0x04
+#define MD03_MOTOR_CURRENT_REG 0x05
+#define MD03_SOFTWARE_REV_REG 0x07
+#define MD03_MOVE_FORWARD 0x01
+#define MD03_STOP 0x00
+#define MD03_MOVE_BACKWARDS 0x02
+
+ros::NodeHandle  nh;
+ 
+byte counter;
+ 
+void setup() {
+  Wire.begin(); // initialiseerd de I2C bus
+  Serial.begin(115200); // initialiseerd de serial bus
+  counter = 0;
+
+  nh.initNode();	// initialise de NODE met ros
+  nh.subscribe(sub);	// koppel met ROS
+}
+ 
+void loop(const std_msgs::UInt16& cmd_msg) {
+
+  Serial.println("Making the motor move forward...");
+ 
+  Wire.beginTransmission(MD03_ADDRESS); // Start de communicatie met de MD03
+  Wire.write(MD03_SPEED_REG);            // Zend het adres van het speed register
+  Wire.write(cmd_msg.data);              // Set de snelheid via ROS message
+  Wire.endTransmission();
+ 
+  Wire.beginTransmission(MD03_ADDRESS); // Start de communicatie met de MD03
+  Wire.write(MD03_ACCELERATION_REG);     // Zend het adres van het acceleration register
+  Wire.write(60);                        // Set de acceleratie (60 = nieuw speed in 2s)
+  Wire.endTransmission();
+ 
+  Wire.beginTransmission(MD03_ADDRESS); // Start de communicatie met de MD03
+  Wire.write(MD03_COMMAND_REG);          // Zend het adres van het command register
+  Wire.write(MD03_MOVE_FORWARD);         // Zend het voorwaarts commando
+  Wire.endTransmission();
+ 
+  delay(5000);                         // wacht 10 seconden
+ 
+  Serial.println("Stopping the motor...");
+ 
+  // Hier wordt gedeclareerd wat de motor waarde is gebaseerd in het acceleratie register.
+
+  Wire.beginTransmission(MD03_ADDRESS);   // Start de communicatie met de MD03
+  Wire.write(MD03_SPEED_REG);              // v speed register
+  Wire.write(MD03_STOP);                   // Set de snelheid op 0
+  Wire.endTransmission();
+  Wire.beginTransmission(MD03_ADDRESS); // Start de communicatie met de MD03
+  Wire.write(MD03_COMMAND_REG);          // Zend het adres van het command register
+  Wire.write(MD03_MOVE_FORWARD);         // Zend het voorwaarts commando
+  Wire.endTransmission();
+ 
+
+  delay(5000);
+}
+
+ros::Subscriber<std_msgs::UInt16> sub("motor", loop);
